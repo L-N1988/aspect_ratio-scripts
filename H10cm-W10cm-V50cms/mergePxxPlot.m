@@ -1,6 +1,8 @@
 clc; clear; close all;
 mergeData = load('merged_pxx.mat');
 
+H = 0.1108;
+
 % Measuring points along vertical centre line
 xv = mergeData.f_merge; 
 yv = repmat(double(mergeData.Y_merge), 1, size(xv, 2)); 
@@ -8,13 +10,13 @@ vv = xv .* mergeData.pxx_merge; % pre-PSD
 smooth_vv = zeros(size(vv));
 
 % Plot and save the merged PSD
-outputFolder = 'mergePSD-figure';
+outputFolder = 'merge-prePSD-figure';
 if ~exist(outputFolder, 'dir')
     mkdir(outputFolder);
 end
 
 for ii = 1:length(mergeData.Y_merge)
-    figure;
+    figure('Position', [100, 100 560 420]);
     % EMD smooth data
     smooth_window = {"gaussian", 50};
     % nmode = 4;
@@ -27,7 +29,7 @@ for ii = 1:length(mergeData.Y_merge)
 
     plot(xv(ii, :), vv(ii, :), 'LineWidth', 1, 'Color', 'b'); hold on;
     plot(xv(ii, :), smooth_vv(ii, :), 'LineWidth', 1.5, 'Color', 'r');
-    set(gca, 'XScale', 'log'); set(gca, 'YScale', 'log');
+    set(gca, 'XScale', 'log'); % set(gca, 'YScale', 'log');
     set(gca, 'FontSize', 16);
     set(xlabel("$f$ (Hz)"), 'Interpreter', 'latex');
     set(ylabel("$fS_{uu}(f) (\rm m^2/s^2)$"), 'Interpreter', 'latex');
@@ -37,10 +39,10 @@ end
 
 %% 
 % Create a single figure
-figure;
+figure('Position', [100, 100, 800, 600]);
 
 % Define the indices for the five data series
-indices = 10:10:length(mergeData.Y_merge); % Select every 5th index
+indices = 10:10:length(mergeData.Y_merge)-2; % Select index at given step, ignore near wall data (max y index)
 
 % Extract the corresponding z values for these indices
 z_values = mergeData.Y_merge(indices); % Vertical positions for the selected indices
@@ -65,13 +67,13 @@ hold off;
 
 % Set the axes properties
 set(gca, 'XScale', 'log');
-set(gca, 'YScale', 'log');
+% set(gca, 'YScale', 'log');
 set(gca, 'FontSize', 16);
 
 % Set labels and title with LaTeX interpreter
 set(xlabel('$f$ (Hz)'), 'Interpreter', 'latex', 'FontSize', 16);
 set(ylabel('$fS_{uu}(f) (\rm m^2/s^2)$'), 'Interpreter', 'latex', 'FontSize', 16);
-set(title('Pre-multiplied Power Spectral Density'), 'Interpreter', 'latex', 'FontSize', 16);
+set(title('Pre-multiplied PSD along z direction'), 'Interpreter', 'latex', 'FontSize', 16);
 
 % Add a colorbar to show the mapping of colors to z values
 colormap(cmap);
@@ -93,7 +95,7 @@ print(gcf, [base_filename '.jpg'], '-djpeg', '-r500');
 
 %%
 % Interpolate data
-[grid_row, grid_col] = deal(max(400, size(yv, 1)*10), max(1000, round(size(xv, 2)/100)));
+[grid_row, grid_col] = deal(max(400, size(yv, 1)*10), max(1200, round(size(xv, 2)/100)));
 xq = logspace(...
     log10(min(xv(xv > 0))), log10(max(xv(:))), ...
     grid_col);
@@ -105,17 +107,20 @@ yq = linspace(...
 vq = griddata(xv, yv, smooth_vv, xq, yq);
 
 %% Plot contour
-region_index = yq >= 0.003 & yq <= 0.113;
+% limite y axis to water depth and ignore near wall region
+figure('Position', [100, 100, 800, 600]);
+region_index = yq >= z_values(end - 3) & yq <= H;
 xq_valid = xq .* region_index;
 yq_valid = yq .* region_index;
 vq_valid = vq .* region_index;
-contourf(xq_valid, yq_valid, vq_valid, 6, 'LineStyle', '--');
+contourf(xq_valid, yq_valid / H, vq_valid, 6, 'LineStyle', '--');
 set(gca, 'XScale', 'log'); set(gca, 'FontSize', 16); %set(gca, 'YScale', 'log');
 set(xlabel("$f$ (Hz)"), 'Interpreter', 'latex');
-set(ylabel("$z(\rm m)$"), 'Interpreter', 'latex');
+set(ylabel("$z/H$"), 'Interpreter', 'latex');
 colormap("sky");
 col = colorbar();
 set(ylabel(col,"$fS_{uu}(f) (\rm m^2/s^2)$"), 'Interpreter', 'latex');
+axis([(min(xv(xv > 0))) (max(xv(:))) z_values(end - 3)/H 1]); % limite y axis to water depth and ignore near wall region
 
 % Save the figure
 contour_filename = fullfile(outputFolder, 'PSD_contour');

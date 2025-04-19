@@ -1,7 +1,7 @@
 clc; clear; close all;
 mergeData = load('merged_pxx.mat');
 
-H = 0.025;
+H = 0.0251;
 
 % Measuring points along vertical centre line
 xv = mergeData.f_merge; 
@@ -16,7 +16,7 @@ if ~exist(outputFolder, 'dir')
 end
 
 for ii = 1:length(mergeData.Y_merge)
-    figure;
+    figure('Position', [100, 100 560 420]);
     % EMD smooth data
     smooth_window = {"gaussian", 50};
     % nmode = 4;
@@ -29,7 +29,7 @@ for ii = 1:length(mergeData.Y_merge)
 
     plot(xv(ii, :), vv(ii, :), 'LineWidth', 1, 'Color', 'b'); hold on;
     plot(xv(ii, :), smooth_vv(ii, :), 'LineWidth', 1.5, 'Color', 'r');
-    set(gca, 'XScale', 'log'); set(gca, 'YScale', 'log');
+    set(gca, 'XScale', 'log'); % set(gca, 'YScale', 'log');
     set(gca, 'FontSize', 16);
     set(xlabel("$f$ (Hz)"), 'Interpreter', 'latex');
     set(ylabel("$fS_{uu}(f) (\rm m^2/s^2)$"), 'Interpreter', 'latex');
@@ -42,7 +42,7 @@ end
 figure('Position', [100, 100, 800, 600]);
 
 % Define the indices for the five data series
-indices = 10:5:length(mergeData.Y_merge)-2; % Select index at given step, ignore near wall data (max y index)
+indices = 5:5:length(mergeData.Y_merge)-2; % Select index at given step, ignore near wall data (max y index)
 
 % Extract the corresponding z values for these indices
 z_values = mergeData.Y_merge(indices); % Vertical positions for the selected indices
@@ -67,7 +67,7 @@ hold off;
 
 % Set the axes properties
 set(gca, 'XScale', 'log');
-set(gca, 'YScale', 'log');
+% set(gca, 'YScale', 'log');
 set(gca, 'FontSize', 16);
 
 % Set labels and title with LaTeX interpreter
@@ -95,7 +95,7 @@ print(gcf, [base_filename '.jpg'], '-djpeg', '-r500');
 
 %%
 % Interpolate data
-[grid_row, grid_col] = deal(max(400, size(yv, 1)*10), max(1000, round(size(xv, 2)/100)));
+[grid_row, grid_col] = deal(max(400, size(yv, 1)*10), max(1200, round(size(xv, 2)/100)));
 xq = logspace(...
     log10(min(xv(xv > 0))), log10(max(xv(:))), ...
     grid_col);
@@ -108,18 +108,19 @@ vq = griddata(xv, yv, smooth_vv, xq, yq);
 
 %% Plot contour
 % limite y axis to water depth and ignore near wall region
-region_index = yq >= 0.002 & yq <= H;
+figure('Position', [100, 100, 800, 600]);
+region_index = yq >= z_values(end-3) & yq <= H;
 xq_valid = xq .* region_index;
 yq_valid = yq .* region_index;
 vq_valid = vq .* region_index;
-contourf(xq_valid, yq_valid / H, vq_valid, 6, 'LineStyle', '--');
-set(gca, 'XScale', 'log'); set(gca, 'FontSize', 16); %set(gca, 'YScale', 'log');
+contourf(xq_valid, yq_valid / H, vq_valid, 10, 'LineStyle', '--');
+set(gca, 'XScale', 'log'); set(gca, 'FontSize', 16); % set(gca, 'YScale', 'log');
 set(xlabel("$f$ (Hz)"), 'Interpreter', 'latex');
 set(ylabel("$z/H$"), 'Interpreter', 'latex');
 colormap("sky");
 col = colorbar();
 set(ylabel(col,"$fS_{uu}(f) (\rm m^2/s^2)$"), 'Interpreter', 'latex');
-axis([(min(xv(xv > 0))) (max(xv(:))) 0.002/H 1]); % limite y axis to water depth and ignore near wall region
+axis([(min(xv(xv > 0))) (max(xv(:))) z_values(end-3)/H 1]); % limite y axis to water depth and ignore near wall region
 
 % Save the figure
 contour_filename = fullfile(outputFolder, 'PSD_contour');

@@ -37,6 +37,7 @@ Note:
 clc; clear; close all;
 data_c = load("case_C/figure_data/pxxs.mat");
 data_l = load("case_L/figure_data/pxxs.mat");
+cut_f = 2; % cut edge of merged frequency
 
 pxx_c = data_c.pxxs; f_c = data_c.fs;
 % Find the middle index of the data
@@ -44,7 +45,7 @@ mid_c = round(size(pxx_c, 2)/2);
 pxx_c = squeeze(pxx_c(:, mid_c, :));
 f_c = squeeze(f_c(:, mid_c, :));
 % Remove high frequency white noise data
-out_f = 100; % cut edge of frequency
+out_f = 200; % cut edge of frequency
 out_index = f_c(1, :) > out_f;
 f_c(:, out_index) = [];
 pxx_c(:, out_index) = [];
@@ -54,7 +55,6 @@ mid_l = round(size(pxx_l, 2)/2);
 pxx_l = squeeze(pxx_l(:, mid_l, :));
 f_l = squeeze(f_l(:, mid_l, :));
 
-cut_f = 2; % cut edge of merged frequency
 index_c = (f_c >= cut_f);
 index_l = (f_l <= cut_f);
 
@@ -114,6 +114,11 @@ function [f_merge, pxx_merge, Y_merge] = mergeAlighment(longer, shorter, cut_f, 
     f_merge = zeros(length(Y_merge), max_columns);
     pxx_merge = zeros(length(Y_merge), max_columns);
 
+    outputFolder = 'mergePSD-figure';
+    if ~exist(outputFolder, 'dir')
+        mkdir(outputFolder);
+    end
+
     % Slice low frequency data based on cut_f
     for ii = 1:length(Y_merge)
         index_l = (f_l(ii, :) <= cut_f);
@@ -125,11 +130,16 @@ function [f_merge, pxx_merge, Y_merge] = mergeAlighment(longer, shorter, cut_f, 
         % Store merged data
         f_merge(ii, 1:length(merged_f)) = merged_f;
         pxx_merge(ii, 1:length(merged_pxx)) = merged_pxx;
+
+        figure('Position', [100, 100 560 420]);
         plot(f_c(ii, :), pxx_c(ii, :));
         hold on;
         plot(f_l(ii, :), pxx_l(ii, :));
         plot(merged_f, merged_pxx); 
-        set(gca, 'XScale', 'log', 'YScale', 'log'); hold off;
+        set(gca, 'XScale', 'log', 'YScale', 'log');
+        set(title(sprintf("PSD at $z = %.3f$ m", Y_merge(ii))), 'Interpreter', 'latex');
+        saveas(gcf, fullfile(outputFolder, sprintf("merged_psd_z%.3f.png", Y_merge(ii))));
+        hold off;
     end
 
     % Trim unused columns
