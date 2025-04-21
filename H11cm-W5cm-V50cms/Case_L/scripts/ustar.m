@@ -3,13 +3,13 @@ casePath = '..';
 load(fullfile(casePath, 'figure_data', 'u_stat.mat'));
 
 %%
-H = 15.03/100; % Water depth in m
-W = 30/100; % Channel width in m
-T = 18.8;  % Temperature in degree Celsius
-S = 0.00037815; % Slope
-log_index = Y > 0.02  & Y < 0.085;  % 0.0146 < y < 0.0517
+H = 11.26/100; % Water depth in m
+W = 5.26/100; % Channel width in m
+T = 18.1;  % Temperature in degree Celsius
+S = 0.001435297; % Slope
+log_index = Y > 0.008  & Y < 0.021;  % 0.0146 < y < 0.0517
 % Linear regression to find the slope of the RSS profile
-RSS_index = Y > 0.015 & Y < 0.12;
+RSS_index = Y > 0.008 & Y < 0.025;
 
 A = H * W; % Cross-sectional area
 P = 2 * H + W; % Wetted perimeter
